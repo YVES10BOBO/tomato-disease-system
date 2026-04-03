@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+env/
+.env
+*.env
+
+# AI Model (large files)
+ai_model/*.h5
+ai_model/*.keras
+ai_model/*.tflite
+ai_model/dataset/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.vercel/
+web/.env.local
+web/.env
+
+# Flutter / Android
+mobile/build/
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/key.properties
+mobile/*.iml
+mobile/.idea/
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
