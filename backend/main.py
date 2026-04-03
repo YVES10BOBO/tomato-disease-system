@@ -74,6 +74,12 @@ if admin_router:
     print("Admin router registered")
 
 
+@app.on_event("startup")
+async def startup_event():
+    from app.disease.ai_model import load_model
+    load_model()
+
+
 @app.get("/")
 def root():
     return {

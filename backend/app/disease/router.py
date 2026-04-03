@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.disease.models import DetectionCreate, DetectionStatusUpdate
+from app.disease.ai_model import load_model, predict_disease, is_plant_leaf
 from app.auth.utils import decode_token
 from app.database.connection import supabase
 from typing import Optional
@@ -26,6 +27,129 @@ def get_severity(confidence: float, disease_name: str) -> str:
     elif confidence >= 70:
         return "medium"
     return "low"
+
+
+# ─── AI PREDICT (from Mobile Scan screen) ───────────────────
+@router.post("/predict", status_code=200)
+async def predict(
+    file: UploadFile = File(...),
+    farm_id: str = Form(...),
+    zone_code: str = Form(...),
+    user=Depends(get_current_user)
+):
+    """
+    Called by mobile Scan screen.
+    Receives a leaf photo, runs AI model, saves detection, returns result.
+    """
+    # Check model is loaded
+    if not load_model():
+        raise HTTPException(
+            status_code=503,
+            detail="AI model not yet deployed. Please train the model first."
+        )
+
+    # Read image bytes
+    image_bytes = await file.read()
+
+    # Run AI prediction
+    try:
+        result = predict_disease(image_bytes)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+
+    # Step 1: Check if image is actually a plant/leaf
+    if not is_plant_leaf(image_bytes):
+        return {
+            "disease_name": "Unknown",
+            "confidence_score": 0.0,
+            "is_healthy": False,
+            "severity": "none",
+            "treatment": "Please take a clear photo of a tomato leaf and try again.",
+            "description": "Image does not appear to be a plant or leaf.",
+            "saved": False
+        }
+
+    # Step 2: Reject low-confidence disease predictions
+    if result["confidence_score"] < 70.0:
+        return {
+            "disease_name": "Unknown",
+            "confidence_score": result["confidence_score"],
+            "is_healthy": False,
+            "severity": "none",
+            "treatment": "Please take a clearer photo of a tomato leaf and try again.",
+            "description": "Could not determine disease with enough confidence.",
+            "saved": False
+        }
+
+    # If healthy, return without saving to DB
+    if result["is_healthy"]:
+        return {
+            "disease_name": "Healthy",
+            "confidence_score": result["confidence_score"],
+            "is_healthy": True,
+            "severity": "none",
+            "treatment": result["treatment"],
+            "description": result["description"],
+            "saved": False
+        }
+
+    # Save detection to database
+    severity = get_severity(result["confidence_score"], result["disease_name"])
+
+    # Get zone ID
+    zone = supabase.table("farm_zones")\
+        .select("id")\
+        .eq("farm_id", farm_id)\
+        .eq("zone_code", zone_code)\
+        .execute()
+    zone_id = zone.data[0]["id"] if zone.data else None
+
+    # Get disease ID
+    disease = supabase.table("diseases")\
+        .select("id")\
+        .eq("name", result["disease_name"])\
+        .execute()
+    disease_id = disease.data[0]["id"] if disease.data else None
+
+    detection = supabase.table("detections").insert({
+        "farm_id": farm_id,
+        "zone_id": zone_id,
+        "disease_id": disease_id,
+        "zone_code": zone_code,
+        "disease_name": result["disease_name"],
+        "confidence_score": result["confidence_score"],
+        "severity": severity,
+        "status": "active"
+    }).execute()
+
+    detection_id = detection.data[0]["id"] if detection.data else None
+
+    # Create alert for farmer
+    farm = supabase.table("farms").select("owner_id, name").eq("id", farm_id).execute()
+    if farm.data:
+        owner_id = farm.data[0]["owner_id"]
+        farm_name = farm.data[0]["name"]
+        supabase.table("alerts").insert({
+            "farm_id": farm_id,
+            "user_id": owner_id,
+            "detection_id": detection_id,
+            "alert_type": "disease",
+            "title": f"Disease Detected in Zone {zone_code} — {farm_name}",
+            "message": f"{result['disease_name']} detected with {result['confidence_score']:.1f}% confidence. {result['treatment']}",
+            "zone_code": zone_code,
+            "risk_level": severity
+        }).execute()
+
+    return {
+        "disease_name": result["disease_name"],
+        "confidence_score": result["confidence_score"],
+        "is_healthy": False,
+        "severity": severity,
+        "treatment": result["treatment"],
+        "description": result["description"],
+        "detection_id": detection_id,
+        "saved": True
+    }
 
 
 # ─── SUBMIT DETECTION (from Raspberry Pi) ───────────────────

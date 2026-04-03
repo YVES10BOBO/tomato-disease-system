@@ -285,7 +285,38 @@ class _ScanScreenState extends State<ScanScreen> {
     final conf = (_result!['confidence_score'] ?? 0).toDouble();
     final sev = _result!['severity'] ?? 'low';
     final treatment = _result!['treatment'] ?? '';
-    final color = isHealthy ? Colors.green : _severityColor(sev);
+    final isUnknown = disease == 'Unknown';
+    final color = isHealthy ? Colors.green : isUnknown ? Colors.grey : _severityColor(sev);
+
+    if (isUnknown) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.orange.shade200),
+        ),
+        child: Row(
+          children: [
+            const Text('📷', style: TextStyle(fontSize: 28)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Not a tomato leaf',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  const SizedBox(height: 4),
+                  Text(treatment,
+                      style: TextStyle(color: Colors.orange.shade800, fontSize: 13)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       width: double.infinity,
