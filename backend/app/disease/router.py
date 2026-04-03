@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.disease.models import DetectionCreate, DetectionStatusUpdate
-from app.disease.ai_model import load_model, predict_disease, is_plant_leaf
+from app.disease.ai_model import load_model, predict_disease, is_tomato_leaf
 from app.auth.utils import decode_token
 from app.database.connection import supabase
 from typing import Optional
@@ -57,15 +57,16 @@ async def predict(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
-    # Step 1: Check if image is actually a plant/leaf
-    if not is_plant_leaf(image_bytes):
+    # Step 1: Check if image is a tomato leaf using binary classifier
+    is_tomato, leaf_confidence = is_tomato_leaf(image_bytes)
+    if not is_tomato:
         return {
-            "disease_name": "Unknown",
-            "confidence_score": 0.0,
+            "disease_name": "Not a plant tomato leaf",
+            "confidence_score": round(100 - leaf_confidence, 2),
             "is_healthy": False,
             "severity": "none",
-            "treatment": "Please take a clear photo of a tomato leaf and try again.",
-            "description": "Image does not appear to be a plant or leaf.",
+            "treatment": "Please take a clear photo of a tomato plant leaf only. Avoid photographing other objects, other plants, or the tomato fruit.",
+            "description": f"Image is not recognized as a tomato plant leaf. This could be another plant, an object, ground, or a blurry photo.",
             "saved": False
         }
 

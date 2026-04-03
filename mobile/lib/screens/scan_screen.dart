@@ -305,7 +305,7 @@ class _ScanScreenState extends State<ScanScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Not a tomato leaf',
+                  const Text('Not a plant tomato leaf',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                   const SizedBox(height: 4),
                   Text(treatment,

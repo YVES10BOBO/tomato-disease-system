@@ -1,6 +1,10 @@
 """
 AI Model loader and predictor for tomato disease detection
-Loaded once at startup, reused for every prediction request
+Two models:
+  1. leaf_validator.h5  — binary: is this a tomato leaf? (yes/no)
+  2. tomato_model.h5    — disease: which of 10 diseases?
+
+University of Rwanda - Final Year Project 2026
 """
 
 import os
@@ -9,27 +13,16 @@ import numpy as np
 from PIL import Image
 import io
 
-MODEL_PATH  = os.path.join(os.path.dirname(__file__), "../../ai_model/tomato_model.h5")
-LABELS_PATH = os.path.join(os.path.dirname(__file__), "../../ai_model/class_labels.json")
+MODEL_PATH             = os.path.join(os.path.dirname(__file__), "../../ai_model/tomato_model.h5")
+LABELS_PATH            = os.path.join(os.path.dirname(__file__), "../../ai_model/class_labels.json")
+VALIDATOR_PATH         = os.path.join(os.path.dirname(__file__), "../../ai_model/leaf_validator.h5")
+VALIDATOR_CLASSES_PATH = os.path.join(os.path.dirname(__file__), "../../ai_model/leaf_validator_classes.json")
 
 # Loaded once at startup
-_model = None
-_class_labels = None
-_leaf_checker = None  # MobileNetV2 for leaf validation
-
-# ImageNet classes that indicate a plant/leaf
-PLANT_CLASSES = {
-    'pot', 'plant', 'leaf', 'tree', 'flower', 'herb',
-    'cabbage', 'broccoli', 'cauliflower', 'cucumber',
-    'zucchini', 'acorn', 'artichoke', 'cardoon',
-    'corn', 'ear', 'rapeseed', 'mushroom', 'gyromitra',
-    'stinkhorn', 'earthstar', 'hen-of-the-woods',
-    'strawberry', 'orange', 'lemon', 'fig', 'pineapple',
-    'banana', 'jackfruit', 'custard apple', 'pomegranate',
-    'hay', 'quilt', 'grass', 'daisy', 'yellow lady',
-    'valley', 'silky', 'worm', 'vine', 'hip', 'buckeye',
-    'coral', 'agaric', 'gyromitra', 'stinkhorn', 'bolete',
-}
+_model           = None
+_class_labels    = None
+_leaf_validator  = None
+_tomato_class_idx = 0   # index for "tomato_leaf" in binary model
 
 DISEASE_INFO = {
     "Tomato_healthy": {
@@ -107,67 +100,81 @@ DISEASE_INFO = {
 
 def load_model():
     """Load both models into memory once at startup"""
-    global _model, _class_labels, _leaf_checker
+    global _model, _class_labels, _leaf_validator, _tomato_class_idx
+
     if _model is not None:
         return True
+
     try:
         import tensorflow as tf
-        model_path = os.path.abspath(MODEL_PATH)
+
+        # ── Disease detection model ──────────────────────────
+        model_path  = os.path.abspath(MODEL_PATH)
         labels_path = os.path.abspath(LABELS_PATH)
+
         if not os.path.exists(model_path):
-            print(f"[AI] Model not found at {model_path}")
-            return False
-        if not os.path.exists(labels_path):
-            print(f"[AI] Labels not found at {labels_path}")
+            print(f"[AI] Disease model not found: {model_path}")
             return False
 
         print("[AI] Loading tomato disease model...")
         _model = tf.keras.models.load_model(model_path)
         with open(labels_path) as f:
             _class_labels = json.load(f)
+        print(f"[AI] Disease model loaded. Classes: {len(_class_labels)}")
 
-        print("[AI] Loading leaf validator (MobileNetV2)...")
-        _leaf_checker = tf.keras.applications.MobileNetV2(
-            weights='imagenet',
-            include_top=True
-        )
-        print(f"[AI] Both models loaded. Disease classes: {len(_class_labels)}")
+        # ── Binary leaf validator ────────────────────────────
+        validator_path = os.path.abspath(VALIDATOR_PATH)
+        validator_classes_path = os.path.abspath(VALIDATOR_CLASSES_PATH)
+
+        if os.path.exists(validator_path) and os.path.exists(validator_classes_path):
+            print("[AI] Loading binary tomato leaf validator...")
+            _leaf_validator = tf.keras.models.load_model(validator_path)
+            with open(validator_classes_path) as f:
+                classes = json.load(f)
+            # Find the index for "tomato_leaf" class
+            _tomato_class_idx = classes.get("tomato_leaf", 0)
+            print(f"[AI] Leaf validator loaded. tomato_leaf index: {_tomato_class_idx}")
+        else:
+            print("[AI] Leaf validator not found — skipping validation (train it with train_leaf_validator.py)")
+
         return True
+
     except Exception as e:
         print(f"[AI] Failed to load model: {e}")
         return False
 
 
-def is_plant_leaf(image_bytes: bytes) -> bool:
+def is_tomato_leaf(image_bytes: bytes) -> tuple[bool, float]:
     """
-    Use MobileNetV2 pretrained on ImageNet to check
-    if image contains a plant or leaf.
-    Returns True if it looks like a plant, False otherwise.
+    Check if image is a tomato leaf using binary classifier.
+    Returns (is_tomato: bool, confidence: float)
+    If validator not loaded, returns (True, 100.0) to skip check.
     """
-    if _leaf_checker is None:
-        return True  # skip check if not loaded
+    if _leaf_validator is None:
+        return True, 100.0
 
-    import tensorflow as tf
     img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
     img = img.resize((224, 224))
-    img_array = np.array(img, dtype=np.float32)
-    img_array = tf.keras.applications.mobilenet_v2.preprocess_input(img_array)
+    img_array = np.array(img, dtype=np.float32) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
 
-    preds = _leaf_checker.predict(img_array, verbose=0)
-    decoded = tf.keras.applications.mobilenet_v2.decode_predictions(preds, top=5)[0]
+    prediction = _leaf_validator.predict(img_array, verbose=0)[0][0]
 
-    # Check if any of top 5 predictions is plant-related
-    for _, label, confidence in decoded:
-        label_lower = label.lower().replace('_', ' ')
-        for plant_word in PLANT_CLASSES:
-            if plant_word in label_lower:
-                return True
-        # Also accept if top prediction confidence > 0.6 for any green/natural class
-        if confidence > 0.6:
-            return True  # high confidence in any single class means clear image
+    # prediction is sigmoid output:
+    # close to 0 = tomato_leaf (if tomato_leaf is class 0)
+    # close to 1 = not_tomato  (if not_tomato is class 1)
+    # Depends on class_indices order from training
 
-    return False
+    if _tomato_class_idx == 0:
+        # tomato_leaf = class 0 → low sigmoid = tomato
+        is_tomato = prediction < 0.5
+        confidence = (1.0 - float(prediction)) * 100
+    else:
+        # tomato_leaf = class 1 → high sigmoid = tomato
+        is_tomato = prediction >= 0.5
+        confidence = float(prediction) * 100
+
+    return is_tomato, round(confidence, 2)
 
 
 def predict_disease(image_bytes: bytes) -> dict:
@@ -178,17 +185,15 @@ def predict_disease(image_bytes: bytes) -> dict:
     if _model is None:
         raise RuntimeError("Model not loaded")
 
-    # Preprocess image
     img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
     img = img.resize((224, 224))
     img_array = np.array(img, dtype=np.float32) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
 
-    # Run prediction
     predictions = _model.predict(img_array, verbose=0)
-    confidence = float(np.max(predictions)) * 100
-    class_idx = str(int(np.argmax(predictions)))
-    class_name = _class_labels.get(class_idx, "Unknown")
+    confidence  = float(np.max(predictions)) * 100
+    class_idx   = str(int(np.argmax(predictions)))
+    class_name  = _class_labels.get(class_idx, "Unknown")
 
     info = DISEASE_INFO.get(class_name, {
         "display_name": class_name,
@@ -199,11 +204,11 @@ def predict_disease(image_bytes: bytes) -> dict:
     })
 
     return {
-        "disease_name": info["display_name"],
-        "raw_class": class_name,
+        "disease_name":    info["display_name"],
+        "raw_class":       class_name,
         "confidence_score": round(confidence, 2),
-        "is_healthy": info["is_healthy"],
-        "severity": info["severity"],
-        "treatment": info["treatment"],
-        "description": info["description"],
+        "is_healthy":      info["is_healthy"],
+        "severity":        info["severity"],
+        "treatment":       info["treatment"],
+        "description":     info["description"],
     }
