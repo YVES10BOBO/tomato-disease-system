@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "author": "RUTEMBEZA Yves - University of Rwanda FYP 2026",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-v1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht1",
+      "top": -80,
+      "left": 200,
+      "attrs": { "pin": "15" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": -40,
+      "left": 180,
+      "attrs": { "value": "10000" }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "soil1",
+      "top": 100,
+      "left": 200,
+      "attrs": { "label": "Soil Moisture" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": 200,
+      "left": 300,
+      "attrs": { "color": "green", "label": "Status" }
+    }
+  ],
+  "connections": [
+    ["esp:GND.1", "dht1:GND", "black", []],
+    ["esp:3V3", "dht1:VCC", "red", []],
+    ["esp:15", "dht1:SDA", "green", []],
+    ["esp:GND.2", "soil1:GND", "black", []],
+    ["esp:3V3", "soil1:VCC", "red", []],
+    ["esp:34", "soil1:SIG", "yellow", []],
+    ["esp:GND.1", "led1:C", "black", []],
+    ["esp:2", "led1:A", "green", []]
+  ],
+  "dependencies": {
+    "ArduinoJson": "6.21.3",
+    "DHT sensor library": "1.4.4"
+  }
+}
