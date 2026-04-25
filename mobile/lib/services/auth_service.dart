@@ -40,8 +40,18 @@ class AuthService {
       await prefs.setString('user', jsonEncode(data['user']));
       return {'success': true, 'user': data['user']};
     }
-    final err = jsonDecode(res.body);
-    return {'success': false, 'message': err['detail'] ?? 'Login failed'};
+    if (res.statusCode == 401 || res.statusCode == 400) {
+      return {'success': false, 'message': 'Invalid email or password'};
+    }
+    if (res.statusCode == 422) {
+      return {'success': false, 'message': 'Please enter a valid email and password'};
+    }
+    try {
+      final err = jsonDecode(res.body);
+      return {'success': false, 'message': err['detail'] ?? 'Login failed'};
+    } catch (_) {
+      return {'success': false, 'message': 'Login failed. Please try again'};
+    }
   }
 
   static Future<Map<String, dynamic>?> getUser() async {

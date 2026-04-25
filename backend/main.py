@@ -37,18 +37,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS - allows Flutter and Next.js to connect
+# CORS - allow all origins for mobile app and ngrok
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:44280",
-        "http://localhost:8080",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:8080",
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

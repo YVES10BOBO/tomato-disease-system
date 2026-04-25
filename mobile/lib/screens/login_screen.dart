@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'main_screen.dart';
@@ -19,19 +20,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
     setState(() { _loading = true; _error = ''; });
-    final result = await AuthService.login(
-      _emailController.text.trim(),
-      _passwordController.text,
-    );
-    if (!mounted) return;
-    setState(() { _loading = false; });
-    if (result['success']) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainScreen()),
+    try {
+      final result = await AuthService.login(
+        _emailController.text.trim(),
+        _passwordController.text,
       );
-    } else {
-      setState(() { _error = result['message'] ?? 'Login failed'; });
+      if (!mounted) return;
+      setState(() { _loading = false; });
+      if (result['success']) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+        );
+      } else {
+        setState(() { _error = result['message'] ?? 'Invalid email or password'; });
+      }
+    } on TimeoutException {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Connection timed out. Check your internet connection.';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Connection failed. Check your internet connection.';
+      });
     }
   }
 
