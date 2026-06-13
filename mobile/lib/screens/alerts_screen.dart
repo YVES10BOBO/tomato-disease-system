@@ -89,7 +89,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('🎉', style: TextStyle(fontSize: 56)),
+                      Icon(Icons.check_circle_outline, size: 56, color: Colors.green),
                       SizedBox(height: 12),
                       Text('No alerts — all clear!', style: TextStyle(color: Colors.grey, fontSize: 16)),
                     ],
@@ -125,7 +125,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                                   color: color.withAlpha(25),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Center(child: Text('🔔', style: TextStyle(fontSize: 20))),
+                                child: const Center(child: Icon(Icons.notifications, color: Colors.orange, size: 22)),
                               ),
                               if (!isRead)
                                 Positioned(

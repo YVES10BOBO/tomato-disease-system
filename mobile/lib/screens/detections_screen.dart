@@ -89,7 +89,7 @@ class _DetectionsScreenState extends State<DetectionsScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text('🔬', style: TextStyle(fontSize: 48)),
+                              const Icon(Icons.biotech, size: 48, color: Colors.grey),
                               const SizedBox(height: 12),
                               Text('No $_filter detections', style: const TextStyle(color: Colors.grey)),
                             ],
@@ -131,7 +131,7 @@ class _DetectionsScreenState extends State<DetectionsScreen> {
                                             color: color.withAlpha(25),
                                             borderRadius: BorderRadius.circular(10),
                                           ),
-                                          child: const Text('🦠', style: TextStyle(fontSize: 22)),
+                                          child: Icon(Icons.coronavirus, size: 22, color: color),
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(

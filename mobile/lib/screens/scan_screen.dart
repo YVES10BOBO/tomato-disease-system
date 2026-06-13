@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -19,7 +19,10 @@ class _ScanScreenState extends State<ScanScreen> {
   String? _farmId;
   String _zoneCode = 'A1';
   String _error = '';
+  bool _loadingFarm = true;
+  bool _creatingFarm = false;
   final _picker = ImagePicker();
+  final _farmNameController = TextEditingController();
 
   final List<String> _zones = ['A1','A2','A3','A4','B1','B2','B3','B4','C1','C2','C3','C4','D1','D2','D3','D4'];
 
@@ -29,7 +32,14 @@ class _ScanScreenState extends State<ScanScreen> {
     _loadFarm();
   }
 
+  @override
+  void dispose() {
+    _farmNameController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadFarm() async {
+    setState(() => _loadingFarm = true);
     try {
       final res = await ApiService.get('/farms/');
       if (res.statusCode == 200) {
@@ -39,6 +49,24 @@ class _ScanScreenState extends State<ScanScreen> {
         }
       }
     } catch (_) {}
+    setState(() => _loadingFarm = false);
+  }
+
+  Future<void> _createFarm() async {
+    final name = _farmNameController.text.trim();
+    if (name.isEmpty) return;
+    setState(() { _creatingFarm = true; _error = ''; });
+    try {
+      final res = await ApiService.post('/farms/', {'name': name, 'location': '', 'district': ''});
+      if (res.statusCode == 201) {
+        final farm = jsonDecode(res.body)['farm'];
+        setState(() { _farmId = farm['id']; _creatingFarm = false; });
+      } else {
+        setState(() { _error = 'Could not create farm. Try again.'; _creatingFarm = false; });
+      }
+    } catch (_) {
+      setState(() { _error = 'Connection error. Try again.'; _creatingFarm = false; });
+    }
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -66,12 +94,13 @@ class _ScanScreenState extends State<ScanScreen> {
         'POST',
         Uri.parse('${ApiService.baseUrl}/disease/predict'),
       );
+      req.headers['ngrok-skip-browser-warning'] = 'true';
       if (token != null) req.headers['Authorization'] = 'Bearer $token';
       req.fields['farm_id'] = _farmId!;
       req.fields['zone_code'] = _zoneCode;
       req.files.add(await http.MultipartFile.fromPath('file', _image!.path));
 
-      final streamed = await req.send();
+      final streamed = await req.send().timeout(const Duration(seconds: 60));
       final res = await http.Response.fromStream(streamed);
 
       if (res.statusCode == 200) {
@@ -109,7 +138,11 @@ class _ScanScreenState extends State<ScanScreen> {
         foregroundColor: Colors.black,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
+      body: _loadingFarm
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF2E7D32)))
+          : _farmId == null
+              ? _buildFarmSetup()
+              : SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,7 +158,7 @@ class _ScanScreenState extends State<ScanScreen> {
               ),
               child: const Row(
                 children: [
-                  Text('📸', style: TextStyle(fontSize: 22)),
+                  Icon(Icons.camera_alt, size: 22, color: Color(0xFF2E7D32)),
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -279,6 +312,73 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
+  Widget _buildFarmSetup() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(height: 40),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2E7D32).withAlpha(25),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.agriculture, size: 60, color: Color(0xFF2E7D32)),
+            ),
+            const SizedBox(height: 24),
+            const Text('Set Up Your Farm',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            const Text(
+              'You need a farm before you can scan leaves. Enter your farm name to get started.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+            const SizedBox(height: 28),
+            TextField(
+              controller: _farmNameController,
+              decoration: InputDecoration(
+                labelText: 'Farm Name',
+                hintText: 'e.g. Rutembeza Tomato Farm',
+                prefixIcon: const Icon(Icons.eco, color: Color(0xFF2E7D32)),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 2),
+                ),
+              ),
+            ),
+            if (_error.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(_error, style: const TextStyle(color: Colors.red, fontSize: 13)),
+            ],
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: _creatingFarm ? null : _createFarm,
+                icon: _creatingFarm
+                    ? const SizedBox(width: 20, height: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Icon(Icons.add),
+                label: Text(_creatingFarm ? 'Creating...' : 'Create Farm'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E7D32),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildResult() {
     final isHealthy = _result!['is_healthy'] ?? false;
     final disease = _result!['disease_name'] ?? 'Unknown';
@@ -299,7 +399,7 @@ class _ScanScreenState extends State<ScanScreen> {
         ),
         child: Row(
           children: [
-            const Text('📷', style: TextStyle(fontSize: 28)),
+            const Icon(Icons.camera, size: 28, color: Colors.orange),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -339,7 +439,7 @@ class _ScanScreenState extends State<ScanScreen> {
             ),
             child: Row(
               children: [
-                Text(isHealthy ? '✅' : '🦠', style: const TextStyle(fontSize: 32)),
+                Icon(isHealthy ? Icons.check_circle : Icons.coronavirus, size: 32, color: color),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -418,7 +518,7 @@ class _ScanScreenState extends State<ScanScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('💊', style: TextStyle(fontSize: 16)),
+                        const Icon(Icons.medication, size: 16, color: Color(0xFF2E7D32)),
                         const SizedBox(width: 8),
                         Expanded(child: Text(treatment,
                             style: const TextStyle(fontSize: 13, color: Color(0xFF1B5E20)))),

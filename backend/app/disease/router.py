@@ -19,7 +19,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 
 def get_severity(confidence: float, disease_name: str) -> str:
     """Determine severity based on confidence score and disease type"""
-    critical_diseases = ["Late Blight", "Bacterial Wilt"]
+    critical_diseases = ["Late Blight"]
     if disease_name in critical_diseases:
         return "critical" if confidence >= 80 else "high"
     if confidence >= 90:

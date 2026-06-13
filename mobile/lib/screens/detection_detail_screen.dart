@@ -118,7 +118,7 @@ class _DetectionDetailScreenState extends State<DetectionDetailScreen> {
                           color: sevColor.withAlpha(30),
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: const Center(child: Text('🦠', style: TextStyle(fontSize: 30))),
+                        child: Center(child: Icon(Icons.coronavirus, size: 30, color: sevColor)),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -213,7 +213,7 @@ class _DetectionDetailScreenState extends State<DetectionDetailScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('💊', style: TextStyle(fontSize: 24)),
+                  const Icon(Icons.medication, size: 24, color: Color(0xFF2E7D32)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(

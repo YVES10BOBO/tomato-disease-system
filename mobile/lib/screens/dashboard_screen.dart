@@ -86,7 +86,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Row(
           children: [
-            Text('🍅', style: TextStyle(fontSize: 22)),
+            Icon(Icons.eco, color: Color(0xFF2E7D32), size: 24),
             SizedBox(width: 8),
             Text('TomatoGuard', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
@@ -122,7 +122,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         // Greeting
                         Text(
-                          'Hello, ${_user?['full_name']?.split(' ').first ?? 'Farmer'} 👋',
+                          'Hello, ${_user?['full_name']?.split(' ').first ?? 'Farmer'}',
                           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1a1a1a)),
                         ),
                         Text(
@@ -155,10 +155,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ],
                                 ),
                               ),
-                              Text(
-                                _summary?['overall_health'] == 'HEALTHY' ? '✅' :
-                                _summary?['overall_health'] == 'CRITICAL' ? '🚨' : '⚠️',
-                                style: const TextStyle(fontSize: 40),
+                              Icon(
+                                _summary?['overall_health'] == 'HEALTHY'
+                                    ? Icons.check_circle
+                                    : _summary?['overall_health'] == 'CRITICAL'
+                                        ? Icons.emergency
+                                        : Icons.warning_amber_rounded,
+                                color: Colors.white,
+                                size: 40,
                               ),
                             ],
                           ),
@@ -201,13 +205,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             child: Column(
                               children: [
-                                _sensorRow('🌡️', 'Temperature', '${_sensor!['temperature']}°C',
+                                _sensorRow(Icons.thermostat, 'Temperature', '${_sensor!['temperature']}°C',
                                   _sensor!['temperature'] > 30 ? Colors.orange : const Color(0xFF2E7D32)),
                                 const Divider(height: 20),
-                                _sensorRow('💧', 'Humidity', '${_sensor!['humidity']}%',
+                                _sensorRow(Icons.water_drop, 'Humidity', '${_sensor!['humidity']}%',
                                   _sensor!['humidity'] > 85 ? Colors.blue.shade700 : const Color(0xFF2E7D32)),
                                 const Divider(height: 20),
-                                _sensorRow('🌱', 'Soil Moisture', '${_sensor!['soil_moisture']}%',
+                                _sensorRow(Icons.grass, 'Soil Moisture', '${_sensor!['soil_moisture']}%',
                                   (_sensor!['soil_moisture'] < 30 || _sensor!['soil_moisture'] > 80)
                                     ? Colors.orange : const Color(0xFF2E7D32)),
                                 const SizedBox(height: 12),
@@ -295,10 +299,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _sensorRow(String emoji, String label, String value, Color color) {
+  Widget _sensorRow(IconData icon, String label, String value, Color color) {
     return Row(
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 20)),
+        Icon(icon, color: color, size: 22),
         const SizedBox(width: 12),
         Text(label, style: const TextStyle(color: Colors.grey, fontSize: 14)),
         const Spacer(),

@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(22),
                 ),
                 child: const Center(
-                  child: Text('🍅', style: TextStyle(fontSize: 52)),
+                  child: Icon(Icons.eco, size: 52, color: Colors.white),
                 ),
               ),
               const SizedBox(height: 20),

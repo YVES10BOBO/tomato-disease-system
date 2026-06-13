@@ -77,7 +77,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   color: Colors.white.withAlpha(38),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Center(child: Text('🍅', style: TextStyle(fontSize: 46))),
+                child: const Center(child: Icon(Icons.eco, size: 46, color: Colors.white)),
               ),
               const SizedBox(height: 16),
               const Text('TomatoGuard',
@@ -172,13 +172,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             items: const [
                               DropdownMenuItem(value: 'farmer',
                                   child: Row(children: [
-                                    Text('🌱', style: TextStyle(fontSize: 18)),
+                                    Icon(Icons.agriculture, size: 18, color: Color(0xFF2E7D32)),
                                     SizedBox(width: 8),
                                     Text('Farmer'),
                                   ])),
                               DropdownMenuItem(value: 'agronomist',
                                   child: Row(children: [
-                                    Text('🔬', style: TextStyle(fontSize: 18)),
+                                    Icon(Icons.biotech, size: 18, color: Colors.blue),
                                     SizedBox(width: 8),
                                     Text('Agronomist'),
                                   ])),

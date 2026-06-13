@@ -1,0 +1,12 @@
+Class,Precision %,Recall %,Val Images
+Bacterial Spot,95.3,94.6,425
+Early Blight,91.9,62.5,200
+Late Blight,88.5,97.1,381
+Leaf Mold,86.1,94.2,190
+Septoria Leaf Spot,83.2,90.7,354
+Spider Mites,89.3,80.0,335
+Target Spot,75.5,80.4,280
+Yellow Leaf Curl Virus,99.8,96.7,641
+Mosaic Virus,95.1,78.4,74
+Healthy,88.5,96.9,318
+Overall (weighted avg),90.3,89.9,3198

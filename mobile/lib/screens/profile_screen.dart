@@ -52,11 +52,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       'agronomist': Colors.blue,
     }[_user?['role'] ?? 'farmer'] ?? Colors.grey;
 
-    final roleIcon = {
-      'admin': '⚙️',
-      'farmer': '👨‍🌾',
-      'agronomist': '🔬',
-    }[_user?['role'] ?? 'farmer'] ?? '👤';
+    final roleIconData = {
+      'admin': Icons.settings,
+      'farmer': Icons.agriculture,
+      'agronomist': Icons.biotech,
+    }[_user?['role'] ?? 'farmer'] ?? Icons.person;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -103,9 +103,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: roleColor.withAlpha(50),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(
-                      '$roleIcon ${(_user?['role'] ?? 'farmer').toUpperCase()}',
-                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(roleIconData, color: Colors.white, size: 14),
+                        const SizedBox(width: 6),
+                        Text(
+                          (_user?['role'] ?? 'farmer').toUpperCase(),
+                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
                   ),
                 ],

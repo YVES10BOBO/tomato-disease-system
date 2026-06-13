@@ -24,12 +24,12 @@ def calculate_risk(temperature: float, humidity: float, soil_moisture: float) ->
         })
         risk_level = "high"
 
-    # Bacterial Wilt: temp 25-35°C + high soil moisture
-    if 25 <= temperature <= 35 and soil_moisture >= 80:
+    # Bacterial Spot: warm 24-30°C + high humidity (spreads in warm, wet, humid weather)
+    if 24 <= temperature <= 30 and humidity >= 80:
         risks.append({
-            "disease": "Bacterial Wilt",
+            "disease": "Bacterial Spot",
             "probability": "high",
-            "action": "Reduce irrigation immediately. Improve drainage."
+            "action": "Apply copper-based bactericide. Avoid overhead irrigation and working with wet plants."
         })
         if risk_level == "low":
             risk_level = "high"
