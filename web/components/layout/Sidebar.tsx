@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import clsx from "clsx";
+import api from "@/lib/api";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "📊" },
@@ -29,12 +30,8 @@ export default function Sidebar() {
 
   const fetchUnreadCount = async () => {
     try {
-      const res = await fetch("http://localhost:8002/alerts/?limit=100", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      const unread = (data.alerts || []).filter((a: any) => !a.is_read).length;
+      const res = await api.get("/alerts/?limit=100");
+      const unread = (res.data.alerts || []).filter((a: any) => !a.is_read).length;
       setUnreadCount(unread);
     } catch {}
   };

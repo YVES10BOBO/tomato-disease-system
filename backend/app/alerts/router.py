@@ -1,31 +1,19 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.auth.utils import decode_token
+from fastapi import APIRouter, HTTPException, Query
 from app.database.connection import supabase
 from typing import Optional
 
 router = APIRouter(prefix="/alerts", tags=["Alerts"])
-security = HTTPBearer()
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    payload = decode_token(credentials.credentials)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-    return payload
-
-
-# ─── GET ALL ALERTS FOR USER ────────────────────────────────
+# ─── GET ALL ALERTS ────────────────────────────────
 @router.get("/")
-def get_my_alerts(
+def get_alerts(
     is_read: Optional[bool] = Query(default=None),
     alert_type: Optional[str] = Query(default=None),
-    limit: int = Query(default=20, le=100),
-    user=Depends(get_current_user)
+    limit: int = Query(default=20, le=100)
 ):
     query = supabase.table("alerts")\
         .select("*")\
-        .eq("user_id", user["sub"])\
         .order("sent_at", desc=True)\
         .limit(limit)
 
@@ -38,7 +26,6 @@ def get_my_alerts(
 
     unread = supabase.table("alerts")\
         .select("id")\
-        .eq("user_id", user["sub"])\
         .eq("is_read", False)\
         .execute()
 
@@ -51,11 +38,10 @@ def get_my_alerts(
 
 # ─── MARK ALERT AS READ ─────────────────────────────────────
 @router.patch("/{alert_id}/read")
-def mark_as_read(alert_id: str, user=Depends(get_current_user)):
+def mark_as_read(alert_id: str):
     result = supabase.table("alerts")\
         .update({"is_read": True})\
         .eq("id", alert_id)\
-        .eq("user_id", user["sub"])\
         .execute()
 
     if not result.data:
@@ -65,10 +51,9 @@ def mark_as_read(alert_id: str, user=Depends(get_current_user)):
 
 # ─── MARK ALL ALERTS AS READ ────────────────────────────────
 @router.patch("/read-all")
-def mark_all_as_read(user=Depends(get_current_user)):
+def mark_all_as_read():
     supabase.table("alerts")\
         .update({"is_read": True})\
-        .eq("user_id", user["sub"])\
         .eq("is_read", False)\
         .execute()
     return {"message": "All alerts marked as read"}
@@ -76,10 +61,9 @@ def mark_all_as_read(user=Depends(get_current_user)):
 
 # ─── GET UNREAD COUNT ───────────────────────────────────────
 @router.get("/unread-count")
-def get_unread_count(user=Depends(get_current_user)):
+def get_unread_count():
     result = supabase.table("alerts")\
         .select("id")\
-        .eq("user_id", user["sub"])\
         .eq("is_read", False)\
         .execute()
     return {"unread_count": len(result.data)}
@@ -89,8 +73,7 @@ def get_unread_count(user=Depends(get_current_user)):
 @router.get("/farm/{farm_id}")
 def get_farm_alerts(
     farm_id: str,
-    limit: int = Query(default=20, le=100),
-    user=Depends(get_current_user)
+    limit: int = Query(default=20, le=100)
 ):
     result = supabase.table("alerts")\
         .select("*")\
@@ -104,7 +87,7 @@ def get_farm_alerts(
 
 # ─── GET DAILY SUMMARY ──────────────────────────────────────
 @router.get("/farm/{farm_id}/summary")
-def get_daily_summary(farm_id: str, user=Depends(get_current_user)):
+def get_daily_summary(farm_id: str):
     from datetime import datetime, timezone, timedelta
 
     today = datetime.now(timezone.utc).date().isoformat()

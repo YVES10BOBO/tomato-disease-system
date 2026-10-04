@@ -6,51 +6,109 @@
     {
       "type": "board-esp32-devkit-v1",
       "id": "esp",
-      "top": 0,
-      "left": 0,
+      "top": 112,
+      "left": 192,
       "attrs": {}
     },
     {
       "type": "wokwi-dht22",
       "id": "dht1",
-      "top": -80,
-      "left": 200,
+      "top": 48,
+      "left": 16,
       "attrs": { "pin": "15" }
-    },
-    {
-      "type": "wokwi-resistor",
-      "id": "r1",
-      "top": -40,
-      "left": 180,
-      "attrs": { "value": "10000" }
     },
     {
       "type": "wokwi-potentiometer",
       "id": "soil1",
-      "top": 100,
-      "left": 200,
-      "attrs": { "label": "Soil Moisture" }
+      "top": 288,
+      "left": 16,
+      "attrs": { "label": "Soil Moisture %" }
     },
     {
-      "type": "wokwi-led",
-      "id": "led1",
-      "top": 200,
-      "left": 300,
-      "attrs": { "color": "green", "label": "Status" }
+      "type": "wokwi-ssd1306",
+      "id": "oled1",
+      "top": 0,
+      "left": 448,
+      "attrs": { "i2cAddress": "0x3C" }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "top": 304,
+      "left": 464,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-rgb-led",
+      "id": "rgb1",
+      "top": 176,
+      "left": 528,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_red",
+      "top": 170,
+      "left": 478,
+      "rotate": 90,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_grn",
+      "top": 196,
+      "left": 478,
+      "rotate": 90,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_blu",
+      "top": 222,
+      "left": 478,
+      "rotate": 90,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": 384,
+      "left": 240,
+      "attrs": { "color": "green" }
     }
   ],
   "connections": [
-    ["esp:GND.1", "dht1:GND", "black", []],
-    ["esp:3V3", "dht1:VCC", "red", []],
-    ["esp:15", "dht1:SDA", "green", []],
-    ["esp:GND.2", "soil1:GND", "black", []],
-    ["esp:3V3", "soil1:VCC", "red", []],
-    ["esp:34", "soil1:SIG", "yellow", []],
-    ["esp:GND.1", "led1:C", "black", []],
-    ["esp:2", "led1:A", "green", []]
+    ["esp:3V3",   "dht1:VCC",  "red",    []],
+    ["esp:GND.1", "dht1:GND",  "black",  []],
+    ["esp:15",    "dht1:SDA",  "green",  []],
+
+    ["esp:3V3",   "soil1:VCC", "red",    []],
+    ["esp:GND.2", "soil1:GND", "black",  []],
+    ["esp:34",    "soil1:SIG", "yellow", []],
+
+    ["esp:3V3",   "oled1:VCC", "red",    []],
+    ["esp:GND.1", "oled1:GND", "black",  []],
+    ["esp:21",    "oled1:SDA", "blue",   []],
+    ["esp:22",    "oled1:SCL", "cyan",   []],
+
+    ["esp:18",    "bz1:pos",      "orange", []],
+    ["esp:GND.2", "bz1:neg",      "black",  []],
+
+    ["esp:25",    "r_red:1",      "red",    []],
+    ["r_red:2",   "rgb1:red",     "red",    []],
+    ["esp:26",    "r_grn:1",      "green",  []],
+    ["r_grn:2",   "rgb1:green",   "green",  []],
+    ["esp:27",    "r_blu:1",      "blue",   []],
+    ["r_blu:2",   "rgb1:blue",    "blue",   []],
+    ["esp:GND.2", "rgb1:COM",     "black",  []],
+
+    ["esp:4",     "btn1:1.l",  "green",  []],
+    ["esp:GND.1", "btn1:2.r",  "black",  []]
   ],
   "dependencies": {
     "ArduinoJson": "6.21.3",
-    "DHT sensor library": "1.4.4"
+    "DHT sensor library": "1.4.4",
+    "Adafruit SSD1306": "2.5.7",
+    "Adafruit GFX Library": "1.11.5"
   }
 }

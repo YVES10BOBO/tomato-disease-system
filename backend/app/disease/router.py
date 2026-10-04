@@ -1,20 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Form
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import APIRouter, HTTPException, Query, UploadFile, File, Form
 from app.disease.models import DetectionCreate, DetectionStatusUpdate
 from app.disease.ai_model import load_model, predict_disease, is_tomato_leaf
-from app.auth.utils import decode_token
 from app.database.connection import supabase
 from typing import Optional
 
 router = APIRouter(prefix="/disease", tags=["Disease Detection"])
-security = HTTPBearer()
-
-
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    payload = decode_token(credentials.credentials)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-    return payload
 
 
 def get_severity(confidence: float, disease_name: str) -> str:
@@ -34,8 +24,7 @@ def get_severity(confidence: float, disease_name: str) -> str:
 async def predict(
     file: UploadFile = File(...),
     farm_id: str = Form(...),
-    zone_code: str = Form(...),
-    user=Depends(get_current_user)
+    zone_code: str = Form(...)
 ):
     """
     Called by mobile Scan screen.
@@ -240,8 +229,7 @@ def submit_detection(data: DetectionCreate):
 def get_detections(
     farm_id: str,
     status: Optional[str] = Query(default=None),
-    limit: int = Query(default=20, le=100),
-    user=Depends(get_current_user)
+    limit: int = Query(default=20, le=100)
 ):
     query = supabase.table("detections")\
         .select("*")\
@@ -258,7 +246,7 @@ def get_detections(
 
 # ─── GET SINGLE DETECTION ───────────────────────────────────
 @router.get("/detections/{detection_id}")
-def get_detection(detection_id: str, user=Depends(get_current_user)):
+def get_detection(detection_id: str):
     result = supabase.table("detections")\
         .select("*")\
         .eq("id", detection_id)\
@@ -284,8 +272,7 @@ def get_detection(detection_id: str, user=Depends(get_current_user)):
 @router.patch("/detections/{detection_id}/status")
 def update_detection_status(
     detection_id: str,
-    update: DetectionStatusUpdate,
-    user=Depends(get_current_user)
+    update: DetectionStatusUpdate
 ):
     if update.status not in ["active", "treated", "resolved"]:
         raise HTTPException(status_code=400, detail="Invalid status")
@@ -305,7 +292,7 @@ def update_detection_status(
 
 # ─── GET ACTIVE DISEASE ZONES (farm map view) ───────────────
 @router.get("/{farm_id}/active-zones")
-def get_active_zones(farm_id: str, user=Depends(get_current_user)):
+def get_active_zones(farm_id: str):
     """Returns all zones that currently have active disease detections"""
     result = supabase.table("detections")\
         .select("zone_code, disease_name, severity, confidence_score, detected_at")\
@@ -322,7 +309,7 @@ def get_active_zones(farm_id: str, user=Depends(get_current_user)):
 
 # ─── GET DISEASE STATISTICS ─────────────────────────────────
 @router.get("/{farm_id}/stats")
-def get_disease_stats(farm_id: str, user=Depends(get_current_user)):
+def get_disease_stats(farm_id: str):
     all_detections = supabase.table("detections")\
         .select("disease_name, status, severity")\
         .eq("farm_id", farm_id)\

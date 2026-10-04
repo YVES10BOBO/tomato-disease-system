@@ -1,0 +1,191 @@
+╔════════════════════════════════════════════════════════════════╗
+║                   TOMATO GUARD - QUICK START                    ║
+║                                                                  ║
+║                   ⚡ 5 MINUTES TO WORKING SYSTEM ⚡             ║
+╚════════════════════════════════════════════════════════════════╝
+
+
+STEP 1: OPEN THE CODE FILE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+File: ESP32_CAM_TOMATO_GUARD.ino
+
+In Arduino IDE:
+1. Click File → Open
+2. Select: ESP32_CAM_TOMATO_GUARD.ino
+3. File will open
+
+
+STEP 2: UPDATE ONLY 4 LINES (Lines 10-16)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔴 Line 13: Change your WiFi name
+   FROM: const char* ssid = "YourWiFiName";
+   TO:   const char* ssid = "MyHome";
+
+🔴 Line 16: Change your WiFi password
+   FROM: const char* password = "YourWiFiPassword";
+   TO:   const char* password = "MyPassword123";
+
+🔴 Line 19: Backend URL (your ngrok)
+   FROM: const char* BACKEND_URL = "https://zoogloeal-...";
+   TO:   const char* BACKEND_URL = "https://zoogloeal-nonprescribed-lovella.ngrok-free.dev";
+
+🔴 Line 22: Your farm zone (A1, B2, etc)
+   FROM: const char* ZONE_CODE = "A1";
+   TO:   const char* ZONE_CODE = "A1";  (keep as is or change if needed)
+
+
+STEP 3: INSTALL REQUIRED LIBRARIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In Arduino IDE:
+1. Go to: Sketch → Include Library → Manage Libraries
+2. Search and install BOTH:
+   ✅ ArduinoJson (by Benoit Blanchon) - version 6.x
+   ✅ DHT sensor library (by Adafruit) - version 1.4.x
+3. Click Install on both
+
+
+STEP 4: SELECT CORRECT BOARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+In Arduino IDE:
+1. Go to: Tools → Board
+2. Search: "ESP32"
+3. Select: "AI-THINKER ESP32-CAM"
+
+Settings:
+   Upload Speed:     921600
+   Flash Mode:       DIO
+   Flash Frequency:  80MHz
+   Partition Scheme: Huge APP (1.9MB OTA, 0.9MB SPIFFS)
+
+
+STEP 5: UPLOAD TO ESP32-CAM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Hardware Setup:
+1. Connect ESP32-CAM to computer via USB cable
+2. Press and HOLD the "IO0" button on ESP32 board
+
+Software:
+1. Click Upload button (→ arrow icon)
+2. Wait until you see "Connecting..."
+3. THEN release the IO0 button
+4. Wait for "Upload complete" message
+
+
+STEP 6: VERIFY IT WORKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Serial Monitor:
+1. Go to: Tools → Serial Monitor
+2. Baud Rate: 115200
+3. Look for:
+   ✅ "TOMATO GUARD - ESP32-CAM STARTING"
+   ✅ "Camera initialized successfully"
+   ✅ "DHT sensor initialized successfully"
+   ✅ "WiFi connected!"
+   ✅ "SYSTEM READY - MONITORING ACTIVE"
+
+
+STEP 7: ACCESS WEB DASHBOARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Find IP Address:
+1. In Serial Monitor, look for: "IP Address: 192.168.x.x"
+2. Copy that IP
+
+Open Dashboard:
+1. Open web browser
+2. Type: http://192.168.1.100  (replace with your IP)
+3. You'll see live sensor data!
+
+
+TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ Upload fails:
+   → Press IO0 button BEFORE clicking Upload
+   → Try different USB cable
+   → Try different USB port
+
+❌ No Serial output:
+   → Check Baud Rate is 115200
+   → Check USB cable connection
+   → Try different COM port
+
+❌ WiFi not connecting:
+   → Verify SSID spelling (case-sensitive)
+   → Verify password correct
+   → Check WiFi is 2.4GHz (not 5GHz)
+
+❌ Camera error:
+   → Check camera ribbon cable fully inserted
+   → Try restarting ESP32 (power off/on)
+   → Check cable is not damaged
+
+❌ DHT sensor not reading:
+   → Check pin 14 connection
+   → Try adding 4.7kΩ pull-up resistor
+   → Check sensor not damaged
+
+
+WHAT HAPPENS AUTOMATICALLY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Every 10 seconds:
+   → Reads: Temperature, Humidity, Soil Moisture
+   → Sends to backend
+   → Updates LED (Green = safe, Red = warning)
+
+Every 60 seconds:
+   → Captures image from camera
+   → Sends to AI model for disease detection
+   → Updates web dashboard
+   → Alerts if disease found
+
+Always:
+   → Monitors web dashboard requests
+   → Updates sensor readings every 5 seconds on web
+   → Ready for manual capture button click
+
+
+SUCCESS CHECKLIST ✓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ Updated WiFi SSID
+□ Updated WiFi Password
+□ Updated Backend URL
+□ Installed ArduinoJson library
+□ Installed DHT library
+□ Selected AI-THINKER board
+□ Uploaded code successfully
+□ Serial Monitor shows "SYSTEM READY"
+□ Can access web dashboard
+□ LEDs responding (Green on startup)
+□ Sensors reading values
+□ Images being captured every 60 seconds
+
+
+NEXT STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Check backend logs see sensor data arriving
+2. Take test photo of tomato leaf
+3. Verify disease detection working
+4. Place system in actual farm location
+5. Monitor sensor data over time
+
+
+THAT'S IT! 🎉
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Your system is now:
+✅ Reading sensors every 10 seconds
+✅ Capturing images every 60 seconds
+✅ Sending to AI for disease detection
+✅ Monitoring with LEDs and buzzer
+✅ Accessible via web dashboard
+
+Questions? Check the logs or Serial Monitor!

@@ -1,4 +1,5 @@
-﻿import 'dart:convert';
+﻿import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,6 +25,15 @@ class _ScanScreenState extends State<ScanScreen> {
   final _picker = ImagePicker();
   final _farmNameController = TextEditingController();
 
+  // Auto-analysis timer
+  Timer? _autoAnalysisTimer;
+  int _autoAnalysisCountdown = 0;
+
+  // Auto-capture timer
+  Timer? _autoCaptureTimer;
+  int _autoCaptureCountdown = 0;
+  bool _cameraActive = false;
+
   final List<String> _zones = ['A1','A2','A3','A4','B1','B2','B3','B4','C1','C2','C3','C4','D1','D2','D3','D4'];
 
   @override
@@ -35,6 +45,8 @@ class _ScanScreenState extends State<ScanScreen> {
   @override
   void dispose() {
     _farmNameController.dispose();
+    _autoAnalysisTimer?.cancel();
+    _autoCaptureTimer?.cancel();
     super.dispose();
   }
 
@@ -71,12 +83,72 @@ class _ScanScreenState extends State<ScanScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
+      _autoAnalysisTimer?.cancel();
+      _autoCaptureTimer?.cancel();
+
       final picked = await _picker.pickImage(source: source, imageQuality: 85, maxWidth: 1024);
       if (picked != null) {
-        setState(() { _image = File(picked.path); _result = null; _error = ''; });
+        setState(() {
+          _image = File(picked.path);
+          _result = null;
+          _error = '';
+          _cameraActive = false;
+        });
+
+        // Start auto-analysis countdown (3 seconds for gallery, 5 for camera)
+        final delaySeconds = source == ImageSource.camera ? 5 : 3;
+        _startAutoAnalysis(delaySeconds);
       }
     } catch (e) {
       setState(() => _error = 'Could not access camera/gallery. Check permissions.');
+    }
+  }
+
+  void _startAutoAnalysis(int seconds) {
+    _autoAnalysisCountdown = seconds;
+    _autoAnalysisTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() => _autoAnalysisCountdown--);
+
+      if (_autoAnalysisCountdown <= 0) {
+        timer.cancel();
+        if (_image != null && !_analyzing) {
+          _analyze();
+        }
+      }
+    });
+  }
+
+  void _startAutoCaptureTimer() {
+    _autoCaptureCountdown = 5;
+    _cameraActive = true;
+    _autoCaptureTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!_cameraActive) {
+        timer.cancel();
+        return;
+      }
+      setState(() => _autoCaptureCountdown--);
+
+      if (_autoCaptureCountdown <= 0) {
+        timer.cancel();
+        _autoCaptureImage();
+      }
+    });
+  }
+
+  Future<void> _autoCaptureImage() async {
+    try {
+      final picked = await _picker.pickImage(source: ImageSource.camera, imageQuality: 85, maxWidth: 1024);
+      if (picked != null) {
+        setState(() {
+          _image = File(picked.path);
+          _result = null;
+          _error = '';
+          _cameraActive = false;
+        });
+        _startAutoAnalysis(3); // Auto-analyze after auto-capture
+      }
+    } catch (e) {
+      setState(() => _error = 'Could not capture image. Try again.');
     }
   }
 
@@ -277,28 +349,186 @@ class _ScanScreenState extends State<ScanScreen> {
                 ),
               ),
 
-            // Analyze button
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                onPressed: (_image == null || _analyzing) ? null : _analyze,
-                icon: _analyzing
-                    ? const SizedBox(width: 20, height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Icon(Icons.biotech),
-                label: Text(
-                  _analyzing ? 'Analyzing...' : 'Analyze Leaf',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            // Auto-analysis countdown
+            if (_image != null && _autoAnalysisCountdown > 0)
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2E7D32).withAlpha(25),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF2E7D32)),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  disabledBackgroundColor: Colors.grey.shade300,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            value: _autoAnalysisCountdown / (_cameraActive ? 5 : 3),
+                            backgroundColor: Colors.grey.shade300,
+                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2E7D32)),
+                          ),
+                          Text(
+                            '$_autoAnalysisCountdown',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2E7D32),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Auto-analyzing...',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF2E7D32)),
+                          ),
+                          Text(
+                            'Analysis will start in $_autoAnalysisCountdown seconds',
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
+
+            // Analyze button (manual or auto-capture mode)
+            if (_image == null || _autoAnalysisCountdown <= 0)
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: Row(
+                  children: [
+                    // Manual analyze button
+                    if (_image != null && _autoAnalysisCountdown <= 0)
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton.icon(
+                          onPressed: _analyzing ? null : _analyze,
+                          icon: _analyzing
+                              ? const SizedBox(width: 20, height: 20,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Icon(Icons.biotech),
+                          label: Text(
+                            _analyzing ? 'Analyzing...' : 'Analyze Now',
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2E7D32),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            disabledBackgroundColor: Colors.grey.shade300,
+                          ),
+                        ),
+                      ),
+                    // Auto-capture button
+                    if (_image == null)
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _startAutoCaptureTimer(),
+                          icon: const Icon(Icons.camera_alt),
+                          label: const Text(
+                            'Auto Capture',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue.shade600,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                        ),
+                      ),
+                    // Regular pick button
+                    if (_image == null) const SizedBox(width: 8),
+                    Expanded(
+                      flex: 1,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showImageSourceSheet(),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Choose', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2E7D32),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Auto-capture countdown
+            if (_cameraActive && _autoCaptureCountdown > 0)
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withAlpha(25),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            value: _autoCaptureCountdown / 5,
+                            backgroundColor: Colors.grey.shade300,
+                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+                          ),
+                          Text(
+                            '$_autoCaptureCountdown',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Capturing in...',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.blue),
+                          ),
+                          Text(
+                            'Camera will auto-capture in $_autoCaptureCountdown seconds',
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() => _cameraActive = false);
+                        _autoCaptureTimer?.cancel();
+                      },
+                      child: const Text('Cancel', style: TextStyle(color: Colors.blue)),
+                    ),
+                  ],
+                ),
+              ),
 
             // Result
             if (_result != null) ...[

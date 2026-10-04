@@ -1,0 +1,194 @@
+{
+  "version": 1,
+  "author": "TomatoGuard Team",
+  "title": "TomatoGuard IoT Simulator",
+  "description": "Complete smart farm monitoring system with ESP32, DHT22, soil moisture sensor, and feedback indicators",
+  "parts": [
+    {
+      "type": "wokwi-esp32",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {
+        "env": "wokwi"
+      }
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht",
+      "top": 50,
+      "left": 250,
+      "attrs": {
+        "temperature": 25,
+        "humidity": 70
+      }
+    },
+    {
+      "type": "wokwi-analog-joystick",
+      "id": "joystick",
+      "top": 200,
+      "left": 250,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led-red",
+      "top": 50,
+      "left": 450,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led-green",
+      "top": 120,
+      "left": 450,
+      "attrs": {
+        "color": "lime"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buzzer",
+      "top": 190,
+      "left": 450,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn",
+      "top": 300,
+      "left": 450,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ssd1306",
+      "id": "oled",
+      "top": 350,
+      "left": 0,
+      "attrs": {
+        "i2cAddress": "0x3C"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 100,
+      "left": 200,
+      "attrs": {
+        "resistance": "4700"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:TX",
+      "dht:DAT",
+      "black",
+      ["15v0"]
+    ],
+    [
+      "dht:VCC",
+      "esp:3V3",
+      "red",
+      ["v0"]
+    ],
+    [
+      "dht:GND",
+      "esp:GND",
+      "black",
+      ["v0"]
+    ],
+    [
+      "joystick:VRx",
+      "esp:34",
+      "orange",
+      ["h0"]
+    ],
+    [
+      "joystick:+5V",
+      "esp:5V",
+      "red",
+      ["h0"]
+    ],
+    [
+      "joystick:GND",
+      "esp:GND",
+      "black",
+      ["h0"]
+    ],
+    [
+      "led-red:A",
+      "esp:25",
+      "green",
+      ["h0"]
+    ],
+    [
+      "led-red:C",
+      "esp:GND",
+      "black",
+      ["h0"]
+    ],
+    [
+      "led-green:A",
+      "esp:26",
+      "green",
+      ["h0"]
+    ],
+    [
+      "led-green:C",
+      "esp:GND",
+      "black",
+      ["h0"]
+    ],
+    [
+      "buzzer:+",
+      "esp:18",
+      "green",
+      ["h0"]
+    ],
+    [
+      "buzzer:-",
+      "esp:GND",
+      "black",
+      ["h0"]
+    ],
+    [
+      "btn:1.l",
+      "esp:4",
+      "green",
+      ["h0"]
+    ],
+    [
+      "btn:1.r",
+      "esp:GND",
+      "black",
+      ["h0"]
+    ],
+    [
+      "oled:GND",
+      "esp:GND",
+      "black",
+      ["v0"]
+    ],
+    [
+      "oled:VCC",
+      "esp:3V3",
+      "red",
+      ["v0"]
+    ],
+    [
+      "oled:SDA",
+      "esp:21",
+      "green",
+      ["h0"]
+    ],
+    [
+      "oled:SCL",
+      "esp:22",
+      "green",
+      ["h0"]
+    ]
+  ]
+}
